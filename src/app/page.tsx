@@ -2716,6 +2716,7 @@ function AdminPanel() {
   const [tempImg, setTempImg] = useState<string>("");
   const [tempImages, setTempImages] = useState<string[]>([]);  // additional product images
   const [tempVideo, setTempVideo] = useState<string>("");  // product video (1:1 square)
+const [tempRelatedIds, setTempRelatedIds] = useState<number[]>([]);
 
   // Category modal state
   const [catModalOpen, setCatModalOpen] = useState(false);
@@ -2735,6 +2736,7 @@ function AdminPanel() {
     setTempImg("");
     setTempImages([]);
     setTempVideo("");
+setTempRelatedIds([]);
     setModalOpen(true);
   };
 
@@ -2752,6 +2754,7 @@ function AdminPanel() {
     setTempImg(p.img || "");
     setTempImages(p.images || []);
     setTempVideo(p.video || "");
+setTempRelatedIds(Array.isArray(p.relatedIds) ? p.relatedIds as number[] : []);
     setModalOpen(true);
   };
 
@@ -2767,6 +2770,7 @@ function AdminPanel() {
       img: tempImg,
       images: tempImages,
       video: tempVideo,
+relatedIds: tempRelatedIds,
       rating: 4.5,
       reviews: 0,
       sold: 0,
@@ -4461,6 +4465,27 @@ function AdminPanel() {
                 rows={2}
                 placeholder="وصف مختصر..."
               />
+<div>
+  <label className="text-xs text-[#777] mb-1 block">العروض الإضافية المقترحة</label>
+  <div className="max-h-40 overflow-y-auto border border-[#F0E0C0] rounded-xl p-2 bg-[#FFFBF0] space-y-1">
+    {products.filter((p) => p.id !== editId).map((p) => (
+      <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#FFF8E8] cursor-pointer">
+        <input
+          type="checkbox"
+          checked={tempRelatedIds.includes(p.id)}
+          onChange={() =>
+            setTempRelatedIds((prev) =>
+              prev.includes(p.id) ? prev.filter((id) => id !== p.id) : [...prev, p.id]
+            )
+          }
+          className="w-3.5 h-3.5 accent-[#F07800]"
+        />
+        <span className="text-xs text-[#555] truncate flex-1">{p.name}</span>
+        <span className="text-[10px] text-[#999]">{calcFinalPrice(p.price, p.disc)} ج.م</span>
+      </label>
+    ))}
+  </div>
+</div>
             </div>
             <div className="flex gap-2 justify-end pt-2">
               <button
