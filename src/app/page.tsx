@@ -4684,9 +4684,10 @@ function ProductDetailPage() {
   const savings = product.price - finalPrice;
   const isBestSeller = product.sold > 300;
   const catObj = categories.find((c) => c.name === product.cat);
-  const relatedProducts = products
-    .filter((p) => p.cat === product.cat && p.id !== product.id)
-    .slice(0, 4);
+  const relatedIds = Array.isArray(product.relatedIds) ? product.relatedIds as number[] : [];
+const relatedProducts = relatedIds.length > 0
+  ? products.filter((p) => relatedIds.includes(p.id))
+  : products.filter((p) => p.cat === product.cat && p.id !== product.id).slice(0, 4);
 
   // Build all product media: main image first, then additional images, then video at end
   const allImages = [
