@@ -5752,6 +5752,8 @@ export default function Home() {
     setProducts,
     setCategories,
     syncFromDatabase,
+    startPolling,
+    stopPolling,
     isAdminUnlocked,
     setAdminUnlocked,
     siteSettings,
@@ -5775,9 +5777,15 @@ export default function Home() {
       }
       // Sync view from URL on initial load
       syncViewFromURL();
+      // Start polling for real-time updates
+      startPolling();
       setLoaded(true);
     };
     initApp();
+    // Stop polling when component unmounts
+    return () => {
+      stopPolling();
+    };
   }, []);
 
   // Handle browser back/forward buttons

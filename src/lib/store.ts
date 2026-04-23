@@ -126,6 +126,8 @@ interface ShopState {
   loadFromStorage: () => void;
   syncFromDatabase: () => Promise<void>;
   seedDatabase: () => Promise<void>;
+  startPolling: () => void;
+  stopPolling: () => void;
 }
 
 const PKEY = "saydaliti_products_v2";
@@ -192,6 +194,10 @@ async function apiCall(url: string, options?: RequestInit) {
 let _settingsBatch: Record<string, unknown> = {};
 let _settingsTimer: NodeJS.Timeout | null = null;
 const SETTINGS_DEBOUNCE_MS = 500; // Wait 500ms before sending batch
+
+// ─── Polling for Real-time Updates ───
+// Poll for data changes every 5 seconds to keep app in sync
+let _pollingInterval: NodeJS.Timeout | null = null;
 
 function debouncedSettingsSync() {
   if (_settingsTimer) clearTimeout(_settingsTimer);
@@ -1002,6 +1008,91 @@ export const useShopStore = create<ShopState>((set, get) => ({
     if (result) {
       // Reload from database after seeding
       await get().syncFromDatabase();
+    }
+  },
+
+  startPolling: () => {
+    // Only start polling in browser
+    if (typeof window === "undefined") return;
+    // Don't start if already polling
+    if (_pollingInterval) return;
+    
+    _pollingInterval = setInterval(async () => {
+      try {
+        // Fetch all data from API
+        const [products, categories, orders, coupons, gifts] = await Promise.all([
+          apiCall("/api/products"),
+          apiCall("/api/categories"),
+          apiCall("/api/orders"),
+          apiCall("/api/coupons"),
+          apiCall("/api/gifts"),
+        ]);
+
+        // Update state only if data has changed
+        const currentState = get();
+        
+        // Check and update products
+        if (products && Array.isArray(products) && JSON.stringify(products) !== JSON.stringify(currentState.products)) {
+          const normalizedProducts = products.map((p: Record<string, unknown>) => ({
+            ...p,
+            images: Array.isArray(p.images) ? p.images : (typeof p.images === 'string' ? (() => { try { return JSON.parse(p.images || '[]'); } catch { return []; } })() : []),
+            video: typeof p.video === 'string' ? p.video : (p.video || ''),
+          }));
+          set({ products: normalizedProducts as Product[] });
+          saveToStorage(PKEY, normalizedProducts);
+        }
+
+        // Check and update categories
+        if (categories && Array.isArray(categories) && JSON.stringify(categories) !== JSON.stringify(currentState.categories)) {
+          set({ categories });
+          saveToStorage(CATKEY, categories);
+        }
+
+        // Check and update orders
+        if (orders && Array.isArray(orders) && JSON.stringify(orders) !== JSON.stringify(currentState.orders)) {
+          set({ orders });
+          saveToStorage(OKEY, orders);
+        }
+
+        // Check and update coupons
+        if (coupons && Array.isArray(coupons)) {
+          const parsedCoupons = coupons.map((c: Record<string, unknown>) => ({
+            ...c,
+            productIds: (() => {
+              if (Array.isArray(c.productIds)) return c.productIds;
+              if (typeof c.productIds === "string") { try { return JSON.parse(c.productIds || "[]"); } catch { return []; } }
+              return [];
+            })(),
+          }));
+          if (JSON.stringify(parsedCoupons) !== JSON.stringify(currentState.coupons)) {
+            set({ coupons: parsedCoupons as Coupon[] });
+          }
+        }
+
+        // Check and update gifts
+        if (gifts && Array.isArray(gifts)) {
+          const parsedGifts = gifts.map((g: Record<string, unknown>) => ({
+            ...g,
+            triggerProductIds: (() => {
+              if (Array.isArray(g.triggerProductIds)) return g.triggerProductIds;
+              if (typeof g.triggerProductIds === "string") { try { return JSON.parse(g.triggerProductIds || "[]"); } catch { return []; } }
+              return [];
+            })(),
+          }));
+          if (JSON.stringify(parsedGifts) !== JSON.stringify(currentState.gifts)) {
+            set({ gifts: parsedGifts as Gift[] });
+          }
+        }
+      } catch (error) {
+        console.error("Polling error:", error);
+      }
+    }, 5000); // Poll every 5 seconds
+  },
+
+  stopPolling: () => {
+    if (_pollingInterval) {
+      clearInterval(_pollingInterval);
+      _pollingInterval = null;
     }
   },
 }));
