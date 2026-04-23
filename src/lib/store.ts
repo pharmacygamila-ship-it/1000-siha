@@ -280,12 +280,43 @@ export const useShopStore = create<ShopState>((set, get) => ({
     );
     set({ products });
     saveToStorage(PKEY, products);
-    // Sync to database
-    apiCall(`/api/products/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updates),
-    });
+    // Sync to database with retry logic
+    let retries = 0;
+    const maxRetries = 3;
+    
+    const syncWithRetry = async () => {
+      try {
+        const result = await apiCall(`/api/products/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+        
+        if (!result) throw new Error("API returned null");
+        
+        // Update local state with server response to ensure sync
+        const updatedProducts = get().products.map((p) =>
+          p.id === id ? { ...p, ...result } : p
+        );
+        set({ products: updatedProducts });
+        saveToStorage(PKEY, updatedProducts);
+        
+        // Success - trigger polling refresh
+        setTimeout(() => get().startPolling?.(), 100);
+      } catch (error) {
+        retries++;
+        if (retries < maxRetries) {
+          // Retry after delay
+          await new Promise(r => setTimeout(r, 500 * retries));
+          await syncWithRetry();
+        } else {
+          console.error(`Failed to update product ${id} after ${maxRetries} retries`, error);
+          // Keep local version - polling will sync when API is available
+        }
+      }
+    };
+    
+    syncWithRetry();
   },
 
   deleteProduct: (id) => {

@@ -2704,6 +2704,8 @@ function AdminPanel() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [productSaveStatus, setProductSaveStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: "" });
   const [form, setForm] = useState({
     name: "",
     cat: "",
@@ -2758,33 +2760,56 @@ setTempRelatedIds(Array.isArray(p.relatedIds) ? p.relatedIds as number[] : []);
     setModalOpen(true);
   };
 
-  const handleSave = () => {
-    if (!form.name.trim()) return;
-    const productData = {
-      name: form.name.trim(),
-      cat: form.cat.trim() || "عام",
-      price: parseFloat(form.price) || 0,
-      disc: parseFloat(form.disc) || 0,
-      desc: form.desc.trim(),
-      tags: [form.tag1.trim(), form.tag2.trim()].filter(Boolean),
-      img: tempImg,
-      images: tempImages,
-      video: tempVideo,
-relatedIds: tempRelatedIds,
-      rating: 4.5,
-      reviews: 0,
-      sold: 0,
-    };
-
-    if (editId) {
-      useShopStore.getState().updateProduct(editId, productData);
-    } else {
-      useShopStore.getState().addProduct({
-        ...productData,
-        id: Date.now(),
-      });
+  const handleSave = async () => {
+    if (!form.name.trim()) {
+      setProductSaveStatus({ type: 'error', message: 'اسم المنتج مطلوب' });
+      setTimeout(() => setProductSaveStatus({ type: null, message: "" }), 3000);
+      return;
     }
-    setModalOpen(false);
+    
+    setSavingProduct(true);
+    setProductSaveStatus({ type: null, message: "" });
+    
+    try {
+      const productData = {
+        name: form.name.trim(),
+        cat: form.cat.trim() || "عام",
+        price: parseFloat(form.price) || 0,
+        disc: parseFloat(form.disc) || 0,
+        desc: form.desc.trim(),
+        tags: [form.tag1.trim(), form.tag2.trim()].filter(Boolean),
+        img: tempImg,
+        images: tempImages,
+        video: tempVideo,
+        relatedIds: tempRelatedIds,
+        rating: 4.5,
+        reviews: 0,
+        sold: 0,
+      };
+
+      if (editId) {
+        useShopStore.getState().updateProduct(editId, productData);
+        setProductSaveStatus({ type: 'success', message: 'تم تحديث المنتج بنجاح!' });
+      } else {
+        useShopStore.getState().addProduct({
+          ...productData,
+          id: Date.now(),
+        });
+        setProductSaveStatus({ type: 'success', message: 'تم إضافة المنتج بنجاح!' });
+      }
+
+      // Close modal after 1 second
+      setTimeout(() => {
+        setModalOpen(false);
+        setSavingProduct(false);
+        setProductSaveStatus({ type: null, message: "" });
+      }, 1000);
+    } catch (error) {
+      console.error("Error saving product:", error);
+      setProductSaveStatus({ type: 'error', message: 'حدث خطأ أثناء حفظ المنتج' });
+      setSavingProduct(false);
+      setTimeout(() => setProductSaveStatus({ type: null, message: "" }), 3000);
+    }
   };
 
   const handleImgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -4379,6 +4404,22 @@ relatedIds: tempRelatedIds,
               )}
             </div>
 
+            {/* Product Save Status Message */}
+            {productSaveStatus.type && (
+              <div className={`p-3 rounded-lg border text-sm font-medium flex items-center gap-2 ${
+                productSaveStatus.type === 'success'
+                  ? 'bg-[#EAF3DE] border-[#2d8a4e]/30 text-[#2d8a4e]'
+                  : 'bg-[#FFF0F0] border-[#e24b4a]/30 text-[#e24b4a]'
+              }`}>
+                {productSaveStatus.type === 'success' ? (
+                  <CheckCircle size={16} />
+                ) : (
+                  <AlertCircle size={16} />
+                )}
+                {productSaveStatus.message}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-[#777] mb-1 block">اسم المنتج</label>
@@ -4490,15 +4531,24 @@ relatedIds: tempRelatedIds,
             <div className="flex gap-2 justify-end pt-2">
               <button
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2 border border-[#F0E0C0] rounded-lg text-sm text-[#777] hover:bg-[#FFF8E8] transition"
+                disabled={savingProduct}
+                className="px-4 py-2 border border-[#F0E0C0] rounded-lg text-sm text-[#777] hover:bg-[#FFF8E8] transition disabled:opacity-50"
               >
                 إلغاء
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2 bg-[#F07800] hover:bg-[#C85A00] text-white rounded-lg text-sm font-medium transition"
+                disabled={savingProduct || !form.name.trim()}
+                className="px-6 py-2 bg-[#F07800] hover:bg-[#C85A00] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition flex items-center gap-2"
               >
-                حفظ
+                {savingProduct ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    جاري الحفظ...
+                  </>
+                ) : (
+                  editId ? "حفظ التعديلات" : "إضافة"
+                )}
               </button>
             </div>
           </div>
