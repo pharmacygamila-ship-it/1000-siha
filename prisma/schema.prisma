@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id         Int      @id @default(autoincrement())
+  name       String
+  cat        String
+  price      Int
+  disc       Int      @default(0)
+  desc       String   @default("")
+  tags       Json     @default("[]")
+  img        String   @default("")
+  images     Json     @default("[]")
+  video      String   @default("")
+  relatedIds Json     @default("[]")
+  rating     Float    @default(0)
+  reviews    Int      @default(0)
+  sold       Int      @default(0)
+  stock      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  orderItems OrderItem[]
+  gifts      Gift[]
+
+  @@index([cat])
+  @@index([sold])
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  icon      String   @default("")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id        String   @id
+  name      String
+  phone     String
+  gov       String
+  addr      String
+  notes     String   @default("")
+  total     Int
+  status    String   @default("جديد")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        Int    @id @default(autoincrement())
+  orderId   String
+  productId Int
+  qty       Int    @default(1)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model SiteSettings {
+  id                  Int      @id @default(1)
+  storeName           String   @default("صيدليتي")
+  storeLogoLetter     String   @default("ص")
+  storeLogoUrl        String   @default("")
+  announcementText    String   @default("")
+  heroTitle           String   @default("منتجات العناية بالبشرة")
+  heroSubtitle        String   @default("الأصلية 100%")
+  heroButtonText      String   @default("تسوق الآن ←")
+  heroBadgeText       String   @default("✦ منتجات أصلية مضمونة ✦")
+  heroDescLine1       String   @default("منتجات أصلية مضمونة — الدفع عند الاستلام فقط")
+  heroDescLine2       String   @default("اطلب واطمن على المنتج الأولاني وبعدين ادفع!")
+  footerDescription   String   @default("")
+  footerQuickLinks    Json     @default("[]")
+  facebookUrl         String   @default("")
+  facebookLabel       String   @default("")
+  messengerUrl        String   @default("https://m.me/saydaliti")
+  websiteUrl          String   @default("")
+  websiteLabel        String   @default("")
+  copyrightText       String   @default("صيدليتي — جميع الحقوق محفوظة")
+  layoutWidth         String   @default("medium")
+  productImageHeight  String   @default("medium")
+  headerSize          String   @default("normal")
+  footerSize          String   @default("normal")
+  mobileViewport      String   @default("full")
+  mobileZoom          String   @default("100")
+  mobilePadding       String   @default("4")
+  mobileCardStyle     String   @default("horizontal")
+  mobileCardSize      String   @default("compact")
+  mobileCatStyle      String   @default("scroll")
+
+  badgeOriginalText       String @default("منتجات أصلية")
+  badgeCODText            String @default("دفع عند الاستلام")
+  badgeDeliveryText       String @default("توصيل سريع مجاناً")
+  badgeReturnText         String @default("استرجاع 7 أيام")
+
+  advOriginalTitle        String @default("منتجات أصلية")
+  advOriginalDesc         String @default("مضمونة 100% من مصادر موثوقة")
+  advCODTitle             String @default("دفع عند الاستلام")
+  advCODDesc              String @default("اطمن الأول وبعدين ادفع")
+  advDeliveryTitle        String @default("توصيل سريع مجاناً")
+  advDeliveryDesc         String @default("للطلبات فوق 300 ج.م")
+  advReturnTitle          String @default("استرجاع 7 أيام")
+  advReturnDesc           String @default("لو مش أصلي هنجيب فلوسك")
+
+  navHomeText             String @default("الرئيسية")
+  navProductsText         String @default("المنتجات")
+  navBestSellingText      String @default("الأكثر مبيعاً")
+  navPolicyText           String @default("سياسة الاسترجاع")
+  navAllProductsText      String @default("كل المنتجات")
+
+  searchPlaceholder       String @default("ابحث عن منتج...")
+  sortNewest              String @default("الأحدث")
+  sortPriceLow            String @default("السعر: من الأقل")
+  sortPriceHigh           String @default("السعر: من الأعلى")
+  sortBestSelling         String @default("الأكثر مبيعاً")
+  noProductsTitle         String @default("لا توجد منتجات مطابقة")
+  noProductsDesc          String @default("جرب كلمات بحث أخرى أو غير التصنيف")
+
+  cartTitle               String @default("سلة التسوق")
+  cartEmptyTitle          String @default("السلة فارغة")
+  cartEmptyDesc           String @default("أضف منتجات من الكتالوج")
+  cartFreeShippingMsg     String @default("واو! عندك توصيل مجاني")
+  cartShippingHint        String @default("أضف منتجات بـ")
+  cartSaveShipping        String @default("ووفر مصاريف الشحن")
+  cartItemCount           String @default("عدد المنتجات")
+  cartShipping            String @default("الشحن")
+  cartTotal               String @default("الإجمالي")
+  cartFreeText            String @default("مجاني")
+  cartShippingLater       String @default("يُحدد لاحقاً")
+  cartCheckoutBtn         String @default("إتمام الطلب ←")
+
+  checkoutTitle           String @default("بيانات الطلب")
+  checkoutStepCart        String @default("السلة")
+  checkoutStepInfo        String @default("البيانات")
+  checkoutStepConfirm     String @default("التأكيد")
+  checkoutSummaryTitle    String @default("ملخص الطلب")
+  checkoutCODTitle        String @default("الدفع عند الاستلام فقط")
+  checkoutCODDesc         String @default("هتستلم المنتج وتتأكد إنه أصلي وبعدين تدفع — مفيش أي مخاطرة!")
+  checkoutNameLabel       String @default("الاسم الكامل")
+  checkoutNamePlaceholder String @default("مثال: محمد أحمد")
+  checkoutPhoneLabel      String @default("رقم التليفون")
+  checkoutGovLabel        String @default("المحافظة")
+  checkoutGovPlaceholder  String @default("اختار المحافظة")
+  checkoutAddrLabel       String @default("العنوان بالتفصيل")
+  checkoutAddrPlaceholder String @default("الحي، الشارع، رقم العمارة...")
+  checkoutNotesLabel      String @default("ملاحظات (اختياري)")
+  checkoutNotesPlaceholder String @default("أي طلبات خاصة...")
+  checkoutBackToCart      String @default("رجوع للسلة")
+  checkoutConfirmBtn      String @default("تأكيد الطلب")
+  checkoutContinueShopping String @default("متابعة التسوق")
+
+  errorNameRequired       String @default("الاسم مطلوب")
+  errorPhoneRequired      String @default("رقم التليفون مطلوب")
+  errorPhoneInvalid       String @default("رقم التليفون مش صحيح (01xxxxxxxxx)")
+  errorGovRequired        String @default("اختار المحافظة")
+  errorAddrRequired       String @default("العنوان مطلوب")
+
+  successTitle            String @default("تم استلام طلبك!")
+  successMsg              String @default("شكراً")
+  successMsg2             String @default("! طلبك رقم")
+  successMsg3             String @default("اتسجل بنجاح.")
+  successMsg4             String @default("هنتواصل معاك على التليفون لتأكيد الطلب ومواعيد التوصيل.")
+  successOrderNum         String @default("رقم الطلب")
+  successPaymentMethod    String @default("طريقة الدفع")
+  successCODLabel         String @default("الدفع عند الاستلام")
+  successDeliveryLabel    String @default("التوصيل")
+  successDeliveryTime     String @default("خلال 4 أيام")
+  successContactMsg       String @default("تقدر تتواصل معانا على صفحتنا على فيسبوك")
+  successContinueBtn      String @default("متابعة التسوق")
+
+  policyPageTitle         String @default("سياسة الاسترجاع والشحن")
+  policyBackToStore       String @default("الرجوع للمتجر")
+  policyReturnTitle       String @default("سياسة الاسترجاع")
+  policyReturnContent     String @default("تقدر ترجع المنتج خلال 7 أيام من استلامه لو مش أصلي أو فيه عيب صناعي. المنتج لازم يكون في حالته الأصلية بدون استخدام. هنستلم المنتج منك ونرجعلك فلوسك فوراً.")
+  policyShippingTitle     String @default("الشحن والتوصيل")
+  policyShippingContent   String @default("التوصيل خلال 4 أيام حسب المحافظة. التوصيل مجاني للطلبات فوق 300 ج.م. للطلبات تحت 300 ج.م مصاريف الشحن بتحدد حسب المحافظة وبتتضاف عند التوصيل.")
+  policyPaymentTitle      String @default("طرق الدفع")
+  policyPaymentContent    String @default("الدفع عند الاستلام فقط — مفيش أي دفع إلكتروني أو تحويل بنكي. استلم المنتج، اتأكد إنه أصلي وبعدين ادفع لمندوب التوصيل. ده عشان نحافظ على ثقتك واطمئنانك.")
+  policyAuthTitle         String @default("ضمان الأصالة")
+  policyAuthContent       String @default("كل منتجاتنا أصلية 100% ومن مصادر موثوقة. لو لا قيت المنتج مش أصلي، ترجعه واحنا نرجعلك فلوسك كاملة زي ما وعدناك.")
+  policyContactTitle      String @default("التواصل والدعم")
+  policyContactContent    String @default("لو عندك أي سؤال أو مشكلة، تواصل معانا على صفحتنا على فيسبوك 'صيدليتي' أو زور موقعنا. فريقنا موجود لمساعدتك في أي وقت.")
+
+  productWhyOrderTitle    String @default("لماذا تطلب من صيدليتي؟")
+  productInCartText       String @default("في السلة")
+  productBuyNowBtn        String @default("شراء الآن")
+  productRelatedTitle     String @default("منتجات مشابهة")
+  productDeliveryTime     String @default("خلال 4 أيام")
+  productOriginalBadge    String @default("منتجات أصلية 100%")
+  productOriginalSub      String @default("مضمونة من مصادر موثوقة")
+  productCODSub           String @default("اطمن الأول وبعدين ادفع")
+  productDeliverySub      String @default("خلال 4 أيام")
+  productReturnSub        String @default("لو مش أصلي هنجيب فلوسك")
+
+  invoiceTitle            String @default("فاتورة")
+  invoiceOrderNum         String @default("رقم الطلب")
+  invoiceDate             String @default("التاريخ")
+  invoiceCustomer         String @default("العميل")
+  invoicePhone            String @default("التليفون")
+  invoiceAddress          String @default("العنوان")
+  invoiceProduct          String @default("المنتج")
+  invoiceQty              String @default("الكمية")
+  invoicePrice            String @default("السعر")
+  invoiceTotal            String @default("الإجمالي")
+  invoiceShipping         String @default("الشحن")
+  invoiceFreeShipping     String @default("مجاني")
+  invoiceShippingLater    String @default("يحدد لاحقاً")
+  invoiceCOD              String @default("الدفع عند الاستلام")
+  invoiceFooter           String @default("شكراً لتسوقكم من")
+  invoiceOriginalBadge    String @default("منتجات أصلية 100%")
+  invoiceReturnBadge      String @default("استرجاع خلال 7 أيام")
+
+  couponPlaceholder       String @default("أدخل كود الخصم")
+  couponApplyBtn          String @default("تطبيق")
+  couponInvalidMsg        String @default("كود الخصم غير صالح")
+  couponExpiredMsg        String @default("كود الخصم منتهي الصلاحية")
+  couponMinOrderMsg       String @default("الحد الأدنى للطلب")
+  couponMaxUsesMsg        String @default("تم استخدام هذا الكود الحد الأقصى")
+  couponAppliedMsg        String @default("تم تطبيق الخصم!")
+  couponDiscountLabel     String @default("الخصم")
+  giftLabel               String @default("هدية مجانية!")
+  giftMinOrderMsg         String @default("أضف منتجات بـ")
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Coupon {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  type        String    @default("percentage")
+  value       Int       @default(0)
+  minOrder    Int       @default(0)
+  maxUses     Int       @default(0)
+  usedCount   Int       @default(0)
+  expiresAt   DateTime?
+  productIds  Json      @default("[]")
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Gift {
+  id                Int      @id @default(autoincrement())
+  name              String
+  description       String   @default("")
+  productId         Int
+  minOrder          Int      @default(0)
+  triggerProductIds Json     @default("[]")
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
